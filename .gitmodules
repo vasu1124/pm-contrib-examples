@@ -1,0 +1,3 @@
+[submodule "msp-ironcore/ironcore-in-a-box"]
+	path = msp-ironcore/ironcore-in-a-box
+	url = https://github.com/ironcore-dev/ironcore-in-a-box
