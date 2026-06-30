@@ -52,10 +52,10 @@ agentName: msp-ironcore-backing
 replicas: 1
 enableLeaderElection: false
 
-# Pin to the matched app version for reproducibility (chart appVersion is already v0.6.0).
+# Pin a backport release containing a bugfix for aggregate API servers.
 image:
   repository: ghcr.io/kcp-dev/api-syncagent
-  tag: v0.6.0
+  tag: release-0.7
 
 # Install the PublishedResource CRD with the chart (default; the CRs are applied later by
 # hack/syncagent-publish.sh, which runs after install).
