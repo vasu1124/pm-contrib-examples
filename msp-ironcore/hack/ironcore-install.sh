@@ -42,13 +42,13 @@ if kubectl --kubeconfig "${KIND_KUBECONFIG}" -n ironcore-system get deploy 2>/de
     rollout status deploy --timeout=180s 2>/dev/null || echo "    (some deployments may still be starting)"
 fi
 
-# Verify CRDs are installed
-echo "==> Verifying ironcore CRDs are present..."
-for crd in machines.compute.ironcore.dev networks.networking.ironcore.dev virtualips.networking.ironcore.dev networkinterfaces.networking.ironcore.dev; do
-  if kubectl --kubeconfig "${KIND_KUBECONFIG}" get crd "${crd}" >/dev/null 2>&1; then
-    echo "    ✓ ${crd}"
+# Verify the IronCore API groups are reachable
+echo "==> Verifying IronCore APIs are reachable..."
+for group in compute.ironcore.dev networking.ironcore.dev; do
+  if kubectl --kubeconfig "${KIND_KUBECONFIG}" api-resources --api-group "${group}" >/dev/null 2>&1; then
+    echo "    ✓ ${group}"
   else
-    echo "    ✗ ${crd} NOT FOUND" >&2
+    echo "    ✗ ${group} NOT REACHABLE" >&2
   fi
 done
 
