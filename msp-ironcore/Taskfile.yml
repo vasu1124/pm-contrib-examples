@@ -1,0 +1,160 @@
+# Taskfile for the msp-ironcore variant — IronCore MSP whose DATA PLANE (ironcore-in-a-box
+# + the kcp api-syncagent) runs in a kind cluster, while the CONTROL PLANE
+# (kcp + portal) is the existing Platform Mesh local-setup (cluster A). The agent connects
+# OUTBOUND from the ironcore-in-a-box cluster to A's kcp.
+#
+# DESIGN: this file is a THIN ORCHESTRATOR. Each target calls one script in hack/ owned by one
+# expert, so multiple agents never edit this file. Owner of THIS file: `developer` (pipeline
+# ordering, vars/env contract, idempotency, UX). Owners of the hack/ scripts + config/ manifests
+# are noted per target.
+#
+# Versions (do not bump without coordinating):
+#   kcp v0.31.0 (provided by cluster A / local-setup)  +  api-syncagent v0.6.0 (targets kcp 0.31)
+#   +  ironcore-in-a-box (full IronCore stack with compute, networking, libvirt-provider).
+#
+# INTEGRATION CONTRACT: the APIExport name is `ironcore.dev` (set in
+# config/syncagent/values.yaml); it MUST equal the APIExport that provider-portal creates in
+# cluster A's $PROVIDER_WS workspace.
+#
+# SHARED-STATE / SAFETY: live bring-up touches cluster A's kcp (shared by the whole local-setup)
+# AND the ironcore-in-a-box kind cluster. `order`/`verify` run `kubectl ws` against $PM_KUBECONFIG,
+# which rewrites that kubeconfig's current-context server to the target workspace (standard kcp
+# navigation; revert with `kubectl ws :root`). Only the integration runner executes the live
+# targets. Experts author + self-validate scripts/manifests (shellcheck, yamllint, helm template,
+# kubectl create --dry-run=client) WITHOUT a live stack.
+#
+# Every hack/ script runs under `set -euo pipefail` and reads the env vars exported below.
+
+version: '3'
+
+vars:
+  SYNCAGENT_VERSION: "0.6.0"
+  KIND_CLUSTER: ironcore-in-a-box
+  KIND_CONTEXT: kind-ironcore-in-a-box
+  AGENT_NAME: msp-ironcore-backing
+  # Provider workspace in cluster A that holds the APIExport `ironcore.dev`.
+  # `kubectl ws` requires a leading ':' for absolute paths (kcp >= 0.31); scripts also normalize
+  # bare-'root:...' values into ':root:...' so either form works on the CLI.
+  PROVIDER_WS: ':root:providers:ironcore-provider'
+  # Consumer (account) workspace in cluster A that has the auto-added APIBinding to
+  # ironcore.dev. PLACEHOLDER — the integrator MUST override this to the real account path,
+  # e.g.  task order CONSUMER_WS=:root:orgs:<org>:<account>
+  CONSUMER_WS: ':root:orgs:REPLACE-WITH-ACCOUNT'
+  ORDER_NAME: webapp
+  ORDER_NS: default
+  # Hostname the ironcore-in-a-box agent uses to reach cluster A's kcp. MUST be root.kcp.localhost:
+  # cluster A's Istio gateway routes by SNI and only root.kcp.localhost has a TLSRoute, and kcp
+  # advertises its APIExportEndpointSlice virtual-workspace URLs at root.kcp.localhost:8443 — so
+  # BOTH hops use this one name. The agent Pod resolves it via the hostAliases block in
+  # config/syncagent/values.yaml (it would otherwise resolve to 127.0.0.1 = the pod itself).
+  KCP_EXTERNAL_HOST: kcp.api.portal.localhost
+  KCP_PORT: "8443"
+  # Cluster A's admin kubeconfig. Reads $PM_KUBECONFIG, else falls back to
+  # ./kcp-admin.kubeconfig in this directory. See README §"Point at cluster A".
+  PM_KUBECONFIG: '{{.PM_KUBECONFIG | default (printf "%s/kcp-admin.kubeconfig" .TASKFILE_DIR)}}'
+
+# Exported to every hack/ script. Scripts read these — do not hardcode values in scripts.
+# KUBECONFIG defaults to cluster A's kcp admin kubeconfig (kcp ops use it or --kubeconfig
+# "$PM_KUBECONFIG"); IRONCORE-IN-A-BOX ops MUST be explicit: kubectl --kubeconfig "$KIND_KUBECONFIG".
+env:
+  KUBECONFIG: '{{.PM_KUBECONFIG}}'
+  TASKFILE_DIR: '{{.TASKFILE_DIR}}'
+  PM_KUBECONFIG: '{{.PM_KUBECONFIG}}'
+  KIND_KUBECONFIG: '{{.TASKFILE_DIR}}/.kube/kind.kubeconfig'
+  SYNCAGENT_VERSION: '{{.SYNCAGENT_VERSION}}'
+  KIND_CLUSTER: '{{.KIND_CLUSTER}}'
+  KIND_CONTEXT: '{{.KIND_CONTEXT}}'
+  AGENT_NAME: '{{.AGENT_NAME}}'
+  PROVIDER_WS: '{{.PROVIDER_WS}}'
+  CONSUMER_WS: '{{.CONSUMER_WS}}'
+  ORDER_NAME: '{{.ORDER_NAME}}'
+  ORDER_NS: '{{.ORDER_NS}}'
+  KCP_EXTERNAL_HOST: '{{.KCP_EXTERNAL_HOST}}'
+  KCP_PORT: '{{.KCP_PORT}}'
+
+tasks:
+  default:
+    cmds: [ task --list ]
+    silent: true
+
+  # owner script: hack/tools-check.sh   (k8s-expert)
+  tools:check:
+    desc: "Verify required CLIs (kubectl, kind, docker, helm, kubectl-ws, go, make) and print versions"
+    cmds: [ bash hack/tools-check.sh ]
+
+  # owner script: hack/kind-up.sh + config/kind/cluster.yaml   (k8s-expert)
+  kind:up:
+    desc: "Create the ironcore-in-a-box kind cluster (shares the default 'kind' docker network with cluster A)"
+    cmds: [ bash hack/kind-up.sh ]
+  kind:down:
+    desc: "Delete the ironcore-in-a-box kind cluster"
+    cmds: [ bash hack/kind-down.sh ]
+
+  # owner script: hack/ironcore-install.sh   (ironcore-expert)
+  ironcore:install:
+    desc: "Deploy the IronCore stack into the ironcore-in-a-box kind cluster"
+    cmds: [ bash hack/ironcore-install.sh ]
+
+  # owner scripts: hack/syncagent-*.sh + config/syncagent/*.yaml   (syncagent-expert)
+  syncagent:kubeconfig:
+    desc: "Derive a cluster-A provider-workspace kubeconfig & store it as a Secret in the ironcore-in-a-box cluster (needs cluster A up)"
+    cmds: [ bash hack/syncagent-kubeconfig.sh ]
+  syncagent:install:
+    desc: "Helm-install api-syncagent {{.SYNCAGENT_VERSION}} into the ironcore-in-a-box cluster"
+    cmds: [ bash hack/syncagent-install.sh ]
+  syncagent:publish:
+    desc: "Apply on-cluster RBAC + PublishedResources for IronCore APIs (Machine, Network, VirtualIP, NetworkInterface)"
+    cmds: [ bash hack/syncagent-publish.sh ]
+
+  # owner script: hack/provider-bind.sh + config/kcp/apibinding.yaml   (kcp-expert)
+  bind:
+    desc: "Bind CONSUMER_WS to ironcore.dev accepting all claims (run BEFORE order; set CONSUMER_WS)"
+    cmds: [ bash hack/provider-bind.sh ]
+
+  # owner script: hack/order.sh + config/samples/order-machine.yaml   (ironcore-expert)
+  order:
+    desc: "Order IronCore resources: create Machine, Network, VirtualIP, NetworkInterface in consumer ws {{.CONSUMER_WS}} (run bind first)"
+    cmds: [ bash hack/order.sh ]
+
+  # owner script: test/e2e.sh   (test-verifier)
+  verify:
+    desc: "End-to-end proof: resources synced to ironcore-in-a-box, Machine running, status synced back"
+    cmds: [ bash test/e2e.sh ]
+
+  # Convenience: show live state without touching anything (safe to run any time).
+  status:
+    desc: "Show live state: cluster-A kubeconfig presence, ironcore-in-a-box cluster, IronCore stack + syncagent rollout"
+    cmds:
+      - |
+        echo "=== cluster A kcp kubeconfig ($PM_KUBECONFIG) ==="
+        if [ -s "$PM_KUBECONFIG" ]; then echo "  present"; else echo "  (missing — cluster A not stood up yet)"; fi
+        echo ""
+        echo "=== ironcore-in-a-box kind cluster ($KIND_CLUSTER) ==="
+        if kind get clusters 2>/dev/null | grep -qx "$KIND_CLUSTER"; then
+          kubectl --kubeconfig "$KIND_KUBECONFIG" get nodes 2>/dev/null
+        else
+          echo "  (not running)"
+        fi
+        echo ""
+        echo "=== IronCore stack ==="
+        kubectl --kubeconfig "$KIND_KUBECONFIG" \
+          -n ironcore-system get deploy 2>/dev/null || echo "  (not installed)"
+        echo ""
+        echo "=== IronCore Resources ==="
+        for crd in compute.ironcore.dev networking.ironcore.dev storage.ironcore.dev core.apinet.ironcore.dev core.ironcore.dev ipam.ironcore.dev networking.metalnet.ironcore.dev; do
+          if kubectl --kubeconfig "$KIND_KUBECONFIG" api-resources --api-group "$crd" >/dev/null 2>&1; then
+            echo "  ✓ $crd"
+          else
+            echo "  ✗ $crd (not found)"
+          fi
+        done
+        echo ""
+        echo "=== api-syncagent ==="
+        # Helm chart sets app.kubernetes.io/name to the fullname (= release name kcp-api-syncagent).
+        kubectl --kubeconfig "$KIND_KUBECONFIG" \
+          -n kcp-system get deploy -l app.kubernetes.io/name=kcp-api-syncagent 2>/dev/null || echo "  (not installed)"
+
+  down:
+    desc: "Tear down the ironcore-in-a-box kind cluster (cluster A is left untouched)"
+    cmds:
+      - task: kind:down

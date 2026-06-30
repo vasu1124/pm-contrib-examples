@@ -1,0 +1,29 @@
+# config/provider/rbac.yaml — owner: kcp-expert
+#
+# Allow account workspaces to BIND the `ironcore.dev` APIExport without explicit per-account
+# permission. Mirrors provider-quickstart/config/provider/rbac.yaml: the Platform Mesh operator's
+# extraDefaultAPIBindings injects a binding to this export into every account workspace, and that
+# bind operation runs as system:anonymous in this local-setup. Without this, the auto-binding fails
+# and ironcore resources are never served in the account.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ironcore-dev-apiexport-bind
+rules:
+  - apiGroups: ["apis.kcp.io"]
+    resources: ["apiexports"]
+    verbs: ["bind"]
+    resourceNames: ["ironcore.dev"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ironcore-dev-anonymous-bind
+subjects:
+  - kind: User
+    name: system:anonymous
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: ironcore-dev-apiexport-bind
+  apiGroup: rbac.authorization.k8s.io

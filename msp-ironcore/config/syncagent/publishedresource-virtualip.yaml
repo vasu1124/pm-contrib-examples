@@ -1,0 +1,26 @@
+# config/syncagent/publishedresource-virtualip.yaml — owner: syncagent-expert
+# Applied on the ironcore-in-a-box kind cluster. Tells the api-syncagent to publish IronCore's
+# VirtualIP API into kcp — the agent generates an APIResourceSchema from the CRD and adds it to
+# the APIExport `ironcore.dev` in the provider workspace.
+apiVersion: syncagent.kcp.io/v1alpha1
+kind: PublishedResource
+metadata:
+  name: ironcore-virtualips
+spec:
+  resource:
+    apiGroup: networking.ironcore.dev
+    kind: VirtualIP
+    versions:
+      - v1alpha1
+  # !! GOAL-1 SINGLE-CONSUMER SIMPLIFICATION — MUST BE REMOVED FOR GOAL 2 !!
+  # This `naming` block preserves the consumer's name + namespace on the service cluster instead of
+  # the agent's DEFAULT anti-collision hashing. It makes the on-kind objects predictable — Cluster
+  # `pg-demo` in ns `default`, pods `pg-demo-N`, Secret `pg-demo-app` — matching docs/architecture.md
+  # and the CNPG live-test Job in config/cnpg/NOTES.md.
+  # It is SAFE ONLY because goal 1 is single-consumer / single-order. For the multi-consumer goal 2,
+  # DELETE this entire `naming` block to restore the default hashing — otherwise two consumers that
+  # order the same name/namespace would COLLIDE on kind (the default hashing exists precisely to
+  # prevent that). The kcp-side synced Secret is `pg-demo-app` with or without this block.
+  naming:
+    name: "{{ .Object.metadata.name }}"
+    namespace: "{{ .Object.metadata.namespace }}"

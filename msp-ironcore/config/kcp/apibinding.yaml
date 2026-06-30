@@ -1,0 +1,39 @@
+# config/kcp/apibinding.yaml — owner: kcp-expert (content coordinated with provider-portal)
+#
+# Consumer-side APIBinding applied into the ACCOUNT workspace ($CONSUMER_WS) on cluster A. It binds
+# the account to the provider's `ironcore.dev` APIExport so ironcore resources (Machine, Network,
+# VirtualIP, NetworkInterface) are served there, AND — critically — Accepts all three auto-added
+# permissionClaims.
+#
+# WHY THIS EXISTS (silent-failure trap): the platform-mesh operator's extraDefaultAPIBindings
+# auto-creates a CLAIM-LESS default binding to this export in each account. With the claims
+# unaccepted the APIBinding can still reach Bound, but the api-syncagent cannot create the target
+# namespace / sync events back — so changes silently never propagate. hack/provider-bind.sh
+# therefore PATCHES the operator's existing binding to accept the claims when present, and only
+# applies THIS manifest when no binding to the export exists yet.
+#
+# api-syncagent v0.6.0 auto-adds exactly these 3 core (group "") claims for the published
+# resources: namespaces, secrets, events. ALL must be Accepted (kcp APIBinding uses singular
+# `resource:`).
+apiVersion: apis.kcp.io/v1alpha1
+kind: APIBinding
+metadata:
+  name: ironcore.dev
+spec:
+  reference:
+    export:
+      path: root:providers:ironcore-provider
+      name: ironcore.dev
+  permissionClaims:
+    - group: ""
+      resource: namespaces
+      all: true
+      state: Accepted
+    - group: ""
+      resource: secrets
+      all: true
+      state: Accepted
+    - group: ""
+      resource: events
+      all: true
+      state: Accepted

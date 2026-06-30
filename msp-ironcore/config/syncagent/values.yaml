@@ -1,0 +1,81 @@
+# Helm values for the kcp api-syncagent — chart `kcp/api-syncagent` v0.6.0
+# (repo https://kcp-dev.github.io/helm-charts, image ghcr.io/kcp-dev/api-syncagent:v0.6.0).
+# Installed into namespace kcp-system on the ironcore-in-a-box kind cluster by
+# hack/syncagent-install.sh.
+#
+# Rendered objects (Helm release name `kcp-api-syncagent`, chart name `api-syncagent`):
+#   - ServiceAccount `kcp-api-syncagent`  (fullname == release name; matched by config/syncagent/rbac.yaml)
+#   - Deployment     `kcp-api-syncagent`
+#
+# HOW THE AGENT REACHES cluster A's kcp (two hops — BOTH connect from inside the ironcore-in-a-box
+# pod, and BOTH use the hostname root.kcp.localhost):
+#   1. Bootstrap: the agent reads Secret `kcp-kubeconfig` (key `kubeconfig`), built by
+#      hack/syncagent-kubeconfig.sh to point at the provider workspace
+#      (root:providers:ironcore-provider) via https://root.kcp.localhost:8443 with
+#      insecure-skip-tls-verify.
+#   2. Serving: the agent then follows the APIExportEndpointSlice `ironcore.dev` in that
+#      workspace; cluster A's kcp advertises that virtual-workspace URL at root.kcp.localhost:8443.
+# WHY root.kcp.localhost (NOT host.docker.internal): cluster A fronts kcp with an Istio gateway
+# that routes by SNI, and only root.kcp.localhost has a TLSRoute — connecting under any other name
+# presents the wrong SNI and routing fails. insecure-skip-tls-verify still sends SNI derived from
+# the URL host, so the name in the kubeconfig server URL is what matters. Because root.kcp.localhost
+# would otherwise resolve to 127.0.0.1 (the pod itself), the hostAliases block below maps it to a
+# host-reachable gateway IP — that block is REQUIRED here, not just a fallback.
+
+# ==========================================================================================
+# INTEGRATION CONTRACT — these two names MUST equal the APIExport that provider-portal creates
+# in cluster A's root:providers:ironcore-provider workspace. kcp auto-creates a default
+# APIExportEndpointSlice named after the APIExport, so both values are simply the APIExport name.
+# ==========================================================================================
+
+# Required — the APIExportEndpointSlice the agent serves (auto-created by kcp, named after the
+# APIExport `ironcore.dev`). In the v0.6.0 chart this is THE knob that wires the agent: it
+# renders the container flag `--apiexportendpointslice-ref=ironcore.dev`, and the agent
+# discovers the APIExport (to attach generated APIResourceSchemas to) by following that slice.
+apiExportEndpointSliceName: ironcore.dev
+
+# Documents the integration contract (the APIExport name). NOTE: the api-syncagent v0.6.0 Helm
+# chart does NOT consume an `apiExportName` value — it is inert here (verified via `helm template`:
+# only `--apiexportendpointslice-ref` is rendered). Kept to make the contract explicit and for
+# forward-compat; the actual wiring is `apiExportEndpointSliceName` above.
+apiExportName: ironcore.dev
+
+# Required — name of the Secret (with a `kubeconfig` key) holding the provider-workspace-scoped
+# kcp kubeconfig. Created on the ironcore-in-a-box cluster in ns kcp-system by hack/syncagent-kubeconfig.sh.
+kcpKubeconfig: kcp-kubeconfig
+
+# Informational (the agent's public name). Also the value of the `syncagent.kcp.io/agent-name`
+# label on synced objects.
+agentName: msp-ironcore-backing
+
+# Single agent on the ironcore-in-a-box cluster: one replica, leader election off.
+replicas: 1
+enableLeaderElection: false
+
+# Pin to the matched app version for reproducibility (chart appVersion is already v0.6.0).
+image:
+  repository: ghcr.io/kcp-dev/api-syncagent
+  tag: v0.6.0
+
+# Install the PublishedResource CRD with the chart (default; the CRs are applied later by
+# hack/syncagent-publish.sh, which runs after install).
+crds:
+  enabled: true
+
+# REQUIRED for ironcore-in-a-box pod -> cluster-A-kcp connectivity (see "WHY root.kcp.localhost" above).
+# root.kcp.localhost — the only SNI cluster A's Istio gateway routes — would otherwise resolve to
+# 127.0.0.1 inside the pod. This maps it to the host-gateway where cluster A's :8443 is published.
+# On Docker Desktop that is host.docker.internal's in-node IPv4 (192.168.65.254 below — verified live).
+# hack/syncagent-install.sh RESOLVES this per host at install time and OVERRIDES the ip via --set:
+#   docker exec <KIND_CLUSTER>-control-plane getent ahostsv4 host.docker.internal
+# so the value below is just the documented fallback (used for a manual `helm install` without the
+# script). NB: the `kind` bridge gateway (172.18.0.1) does NOT work — A's :8443 is published on host
+# loopback, unreachable via the bridge interface.
+hostAliases:
+  enabled: true
+  values:
+    - ip: "192.168.65.254"
+      hostnames:
+        - root.kcp.localhost
+        - kcp.api.portal.localhost
+        - triton.kcp.localhost

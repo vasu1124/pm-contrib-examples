@@ -1,0 +1,24 @@
+# config/kcp/apiexport.yaml — owner: kcp-expert (manifest) / syncagent-expert (runtime population).
+#
+# Empty APIExport applied into the provider workspace :root:providers:ironcore-provider on cluster A.
+# Required because api-syncagent v0.6.0 RESOLVES (does not create) the APIExport + auto-derived
+# APIExportEndpointSlice on startup — see api-syncagent docs/content/getting-started.md and the
+# WARNING in internal/controller/apiexport/reconciler.go. Without this seed the agent crash-loops
+# with "apiexportendpointslices.apis.kcp.io 'ironcore.dev' not found".
+#
+# The name MUST equal `apiExportEndpointSliceName` in config/syncagent/values.yaml (kcp auto-creates
+# the default APIExportEndpointSlice with the same name as the APIExport).
+#
+# Shipped EMPTY (spec.latestResourceSchemas: []) — the agent fills in resource schemas and
+# permission claims when the PublishedResources are applied on the ironcore-in-a-box cluster
+# (hack/syncagent-publish.sh).
+apiVersion: apis.kcp.io/v1alpha1
+kind: APIExport
+metadata:
+  name: ironcore.dev
+  labels:
+    # The portal joins APIExport <-> ContentConfiguration on this label
+    # (contentconfiguration.yaml carries the matching `ui.platform-mesh.io/content-for`).
+    ui.platform-mesh.io/content-for: ironcore.dev
+spec:
+  latestResourceSchemas: []
