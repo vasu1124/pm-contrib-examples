@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: msp-boinc-controller
+  namespace: msp-boinc
+  labels:
+    app: msp-boinc-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: msp-boinc-controller
+  template:
+    metadata:
+      labels:
+        app: msp-boinc-controller
+    spec:
+      serviceAccountName: msp-boinc-controller
+      containers:
+        - name: controller
+          image: ghcr.io/platform-mesh/msp-boinc-controller:latest
+          args:
+            - --kcp-kubeconfig=/etc/kcp/kubeconfig
+          volumeMounts:
+            - name: kcp-kubeconfig
+              mountPath: /etc/kcp
+              readOnly: true
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+      volumes:
+        - name: kcp-kubeconfig
+          secret:
+            secretName: msp-boinc-kcp-kubeconfig

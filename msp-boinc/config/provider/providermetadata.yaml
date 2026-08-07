@@ -1,0 +1,22 @@
+apiVersion: ui.platform-mesh.io/v1alpha1
+kind: ProviderMetadata
+metadata:
+  name: boinc.platform-mesh.io
+spec:
+  displayName: BOINC Compute Provider
+  description: |
+    Submit Docker container workloads to BOINC volunteer computing networks.
+    Provides BoincWorkload and BoincProject APIs for declarative batch job submission
+    and status monitoring through kcp workspaces.
+  contacts:
+    - displayName: BOINC MSP Team
+      email: boinc-msp@platform-mesh.io
+      role: ["Maintainer"]
+  preferredSupportChannels:
+    - displayName: GitHub Issues
+      url: https://github.com/platform-mesh/contrib-examples
+  icon:
+    light:
+      data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjkwIiBmaWxsPSIjMDA2OGI0Ii8+CiAgPHRleHQgeD0iMTAwIiB5PSIxMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0NSIgZm9udC13ZWlnaHQ9ImJvbGQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiPkJPSU5DPC90ZXh0Pgo8L3N2Zz4K"
+    dark:
+      data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjkwIiBmaWxsPSIjMDA5OGVkIi8+CiAgPHRleHQgeD0iMTAwIiB5PSIxMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0NSIgZm9udC13ZWlnaHQ9ImJvbGQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiPkJPSU5DPC90ZXh0Pgo8L3N2Zz4K"

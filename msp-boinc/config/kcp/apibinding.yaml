@@ -1,0 +1,16 @@
+apiVersion: apis.kcp.io/v1alpha1
+kind: APIBinding
+metadata:
+  name: boinc
+spec:
+  reference:
+    export:
+      path: root:providers:boinc
+      name: boinc.platform-mesh.io
+  permissionClaims:
+    - group: ""
+      resource: events
+      state: Accepted
+    - group: ""
+      resource: secrets
+      state: Accepted

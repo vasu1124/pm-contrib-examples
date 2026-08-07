@@ -1,0 +1,39 @@
+apiVersion: ui.platform-mesh.io/v1alpha1
+kind: ContentConfiguration
+metadata:
+  labels:
+    ui.platform-mesh.io/entity: core_platform-mesh_io_account
+    ui.platform-mesh.io/content-for: boinc.platform-mesh.io
+  name: boinc-workloads-ui
+spec:
+  inlineConfiguration:
+    content: |-
+     {
+      "name": "boinc",
+      "luigiConfigFragment": {
+        "data": {
+          "nodes": [
+            {
+              "pathSegment": "boinc",
+              "label": "BOINC Workloads",
+              "hideFromNav": false,
+              "icon": "batch-payments",
+              "url": "https://{context.organization}.portal.localhost:8443/generic-resource-ui/",
+              "entityType": "main.core_platform-mesh_io_account",
+              "order": 950,
+              "context": {
+                "accountId": ":core_platform-mesh_io_accountId",
+                "resourceGroup": "boinc.platform-mesh.io",
+                "resourceVersion": "v1alpha1",
+                "resourcePlural": "boincworkloads"
+              }
+            }
+          ],
+          "texts": [
+            { "locale": "", "textDictionary": { "boinc": "BOINC Workloads" } },
+            { "locale": "en", "textDictionary": { "boinc": "BOINC Workloads" } }
+          ]
+        }
+      }
+     }
+    contentType: json

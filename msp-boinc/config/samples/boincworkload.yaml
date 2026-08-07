@@ -1,0 +1,16 @@
+apiVersion: boinc.platform-mesh.io/v1alpha1
+kind: BoincWorkload
+metadata:
+  name: simulation-demo
+  namespace: default
+spec:
+  projectRef:
+    name: test-project
+  container:
+    image: "docker.io/boinc/example-app:latest"
+    command: "python /app/simulate.py --iterations 1000"
+  resources:
+    flopsEstimate: "1e12"
+    memoryBoundMB: 512
+    diskBoundMB: 1024
+  replicaCount: 3

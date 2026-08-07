@@ -1,0 +1,130 @@
+apiVersion: apis.kcp.io/v1alpha1
+kind: APIResourceSchema
+metadata:
+  name: v1alpha1.boincworkloads.boinc.platform-mesh.io
+spec:
+  group: boinc.platform-mesh.io
+  names:
+    kind: BoincWorkload
+    listKind: BoincWorkloadList
+    plural: boincworkloads
+    singular: boincworkload
+    shortNames:
+      - bw
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: ["projectRef", "container"]
+              properties:
+                projectRef:
+                  type: object
+                  required: ["name"]
+                  properties:
+                    name:
+                      type: string
+                      description: Name of the BoincProject in the same namespace
+                container:
+                  type: object
+                  required: ["image"]
+                  properties:
+                    image:
+                      type: string
+                      description: Docker container image to run on BOINC volunteers
+                    command:
+                      type: string
+                      description: Command line arguments passed to the container
+                resources:
+                  type: object
+                  properties:
+                    flopsEstimate:
+                      type: string
+                      description: Estimated floating-point operations per workunit (scientific notation)
+                    memoryBoundMB:
+                      type: integer
+                      format: int64
+                      description: Memory limit in MB
+                    diskBoundMB:
+                      type: integer
+                      format: int64
+                      description: Disk space limit in MB
+                replicaCount:
+                  type: integer
+                  format: int32
+                  description: Number of parallel workunits to create
+                  default: 1
+                inputFiles:
+                  type: array
+                  items:
+                    type: object
+                    required: ["name", "url"]
+                    properties:
+                      name:
+                        type: string
+                      url:
+                        type: string
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                batchId:
+                  type: integer
+                  format: int64
+                batchName:
+                  type: string
+                activeWorkunits:
+                  type: integer
+                  format: int32
+                succeededWorkunits:
+                  type: integer
+                  format: int32
+                failedWorkunits:
+                  type: integer
+                  format: int32
+                totalWorkunits:
+                  type: integer
+                  format: int32
+                message:
+                  type: string
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Active
+          type: integer
+          jsonPath: .status.activeWorkunits
+        - name: Succeeded
+          type: integer
+          jsonPath: .status.succeededWorkunits
+        - name: Total
+          type: integer
+          jsonPath: .status.totalWorkunits
+        - name: Image
+          type: string
+          jsonPath: .spec.container.image

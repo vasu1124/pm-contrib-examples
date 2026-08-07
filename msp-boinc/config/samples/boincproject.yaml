@@ -1,0 +1,11 @@
+apiVersion: boinc.platform-mesh.io/v1alpha1
+kind: BoincProject
+metadata:
+  name: test-project
+  namespace: default
+spec:
+  projectUrl: "http://boinc-server:80/test_project"
+  displayName: "Test BOINC Project"
+  authenticatorSecretRef:
+    name: boinc-auth
+    key: authenticator

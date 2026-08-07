@@ -1,0 +1,61 @@
+apiVersion: apis.kcp.io/v1alpha1
+kind: APIResourceSchema
+metadata:
+  name: v1alpha1.boincprojects.boinc.platform-mesh.io
+spec:
+  group: boinc.platform-mesh.io
+  names:
+    kind: BoincProject
+    listKind: BoincProjectList
+    plural: boincprojects
+    singular: boincproject
+    shortNames:
+      - bp
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: ["projectUrl", "authenticatorSecretRef"]
+              properties:
+                projectUrl:
+                  type: string
+                  description: URL of the BOINC project server
+                displayName:
+                  type: string
+                  description: Human-readable project name
+                authenticatorSecretRef:
+                  type: object
+                  required: ["name", "key"]
+                  properties:
+                    name:
+                      type: string
+                      description: Name of the Secret
+                    key:
+                      type: string
+                      description: Key within the Secret containing the authenticator token
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                message:
+                  type: string
+                lastProbeTime:
+                  type: string
+                  format: date-time
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: URL
+          type: string
+          jsonPath: .spec.projectUrl
