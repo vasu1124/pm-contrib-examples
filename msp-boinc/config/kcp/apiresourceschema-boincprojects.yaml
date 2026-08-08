@@ -1,9 +1,9 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
-  name: v1alpha1.boincprojects.boinc.platform-mesh.io
+  name: v1alpha1.boincprojects.boinc.berkeley.edu
 spec:
-  group: boinc.platform-mesh.io
+  group: boinc.berkeley.edu
   names:
     kind: BoincProject
     listKind: BoincProjectList
@@ -17,39 +17,50 @@ spec:
       served: true
       storage: true
       schema:
-        openAPIV3Schema:
-          type: object
-          properties:
-            spec:
-              type: object
-              required: ["projectUrl", "authenticatorSecretRef"]
-              properties:
-                projectUrl:
-                  type: string
-                  description: URL of the BOINC project server
-                displayName:
-                  type: string
-                  description: Human-readable project name
-                authenticatorSecretRef:
-                  type: object
-                  required: ["name", "key"]
-                  properties:
-                    name:
-                      type: string
-                      description: Name of the Secret
-                    key:
-                      type: string
-                      description: Key within the Secret containing the authenticator token
-            status:
-              type: object
-              properties:
-                phase:
-                  type: string
-                message:
-                  type: string
-                lastProbeTime:
-                  type: string
-                  format: date-time
+        description: BoincProject is the Schema for the boincprojects API
+        type: object
+        properties:
+          apiVersion:
+            description: APIVersion defines the versioned schema of this representation of an object.
+            type: string
+          kind:
+            description: Kind is a string value representing the REST resource this object represents.
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            description: BoincProjectSpec defines the desired state of BoincProject
+            required: ["projectUrl", "authenticatorSecretRef"]
+            properties:
+              projectUrl:
+                type: string
+                description: URL of the BOINC project server
+              displayName:
+                type: string
+                description: Human-readable project name
+              authenticatorSecretRef:
+                type: object
+                description: Reference to Secret containing the authenticator token
+                required: ["name", "key"]
+                properties:
+                  name:
+                    type: string
+                    description: Name of the Secret
+                  key:
+                    type: string
+                    description: Key within the Secret containing the authenticator token
+          status:
+            type: object
+            description: BoincProjectStatus defines the observed state of BoincProject
+            properties:
+              phase:
+                type: string
+              message:
+                type: string
+              lastProbeTime:
+                type: string
+                format: date-time
       subresources:
         status: {}
       additionalPrinterColumns:

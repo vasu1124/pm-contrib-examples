@@ -1,39 +1,228 @@
+# ContentConfiguration for the BOINC MSP.
+#
+# Adds a "BOINC" parent menu entry to the account-scoped Platform Mesh portal nav.
+# Clicking "BOINC" opens a subscreen where "Projects" and "Workloads" are accessible.
+#
+# metadata.labels.ui.platform-mesh.io/content-for MUST equal the APIExport name.
 apiVersion: ui.platform-mesh.io/v1alpha1
 kind: ContentConfiguration
 metadata:
+  name: boinc-berkeley-edu-ui
   labels:
     ui.platform-mesh.io/entity: core_platform-mesh_io_account
-    ui.platform-mesh.io/content-for: boinc.platform-mesh.io
-  name: boinc-workloads-ui
+    ui.platform-mesh.io/content-for: boinc.berkeley.edu
 spec:
   inlineConfiguration:
+    contentType: json
     content: |-
-     {
-      "name": "boinc",
-      "luigiConfigFragment": {
-        "data": {
-          "nodes": [
-            {
-              "pathSegment": "boinc",
-              "label": "BOINC Workloads",
-              "hideFromNav": false,
-              "icon": "batch-payments",
-              "url": "https://{context.organization}.portal.localhost:8443/generic-resource-ui/",
-              "entityType": "main.core_platform-mesh_io_account",
-              "order": 950,
-              "context": {
-                "accountId": ":core_platform-mesh_io_accountId",
-                "resourceGroup": "boinc.platform-mesh.io",
-                "resourceVersion": "v1alpha1",
-                "resourcePlural": "boincworkloads"
+      {
+        "name": "boinc",
+        "luigiConfigFragment": {
+          "data": {
+            "nodes": [
+              {
+                "pathSegment": "boinc",
+                "navigationContext": "boinc",
+                "label": "BOINC",
+                "icon": "batch-payments",
+                "order": 950,
+                "entityType": "main.core_platform-mesh_io_account",
+                "keepSelectedForChildren": true,
+                "children": [
+                  {
+                    "pathSegment": "projects",
+                    "navigationContext": "boinc_projects",
+                    "label": "Projects",
+                    "icon": "product",
+                    "order": 1,
+                    "keepSelectedForChildren": true,
+                    "url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view",
+                    "webcomponent": { "selfRegistered": true },
+                    "context": {
+                      "resourceDefinition": {
+                        "apiGroup": "boinc_berkeley_edu",
+                        "version": "v1alpha1",
+                        "entity": "BoincProject",
+                        "entityCollection": "BoincProjects",
+                        "scope": "Namespaced",
+                        "namespace": null,
+                        "readyCondition": {
+                          "jsonPathExpression": "status.phase",
+                          "property": ["status.phase"]
+                        },
+                        "ui": {
+                          "listView": {
+                            "fields": [
+                              { "label": "Name",      "property": "metadata.name" },
+                              { "label": "Namespace", "property": "metadata.namespace" },
+                              { "label": "URL",       "property": "spec.projectUrl" },
+                              { "label": "Phase",     "property": "status.phase" }
+                            ]
+                          },
+                          "detailView": {
+                            "fields": [
+                              { "label": "Name",          "property": "metadata.name" },
+                              { "label": "Namespace",     "property": "metadata.namespace" },
+                              { "label": "Project URL",   "property": "spec.projectUrl" },
+                              { "label": "Display Name",  "property": "spec.displayName" },
+                              { "label": "Secret",        "property": "spec.authenticatorSecretRef.name" },
+                              { "label": "Phase",         "property": "status.phase" },
+                              { "label": "Message",       "property": "status.message" }
+                            ]
+                          },
+                          "createView": {
+                            "fields": [
+                              { "label": "Name",          "property": "metadata.name",                         "required": true },
+                              { "label": "Namespace",     "property": "metadata.namespace",                    "required": true, "values": ["default"] },
+                              { "label": "Project URL",   "property": "spec.projectUrl",                       "required": true },
+                              { "label": "Display Name",  "property": "spec.displayName" },
+                              { "label": "Secret Name",   "property": "spec.authenticatorSecretRef.name",      "required": true },
+                              { "label": "Secret Key",    "property": "spec.authenticatorSecretRef.key",       "required": true, "values": ["authenticator"] }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "pathSegment": ":projectId",
+                        "hideFromNav": true,
+                        "keepSelectedForChildren": false,
+                        "defineEntity": {
+                          "id": "boinc_berkeley_edu_boincproject",
+                          "contextKey": "projectId",
+                          "graphqlEntity": {
+                            "group": "boinc_berkeley_edu",
+                            "version": "v1alpha1",
+                            "kind": "BoincProject",
+                            "query": "{ metadata { name namespace } }"
+                          }
+                        },
+                        "context": {
+                          "accountId": ":accountId",
+                          "projectId": ":projectId",
+                          "resourceId": ":projectId"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "pathSegment": "workloads",
+                    "navigationContext": "boinc_workloads",
+                    "label": "Workloads",
+                    "icon": "process",
+                    "order": 2,
+                    "keepSelectedForChildren": true,
+                    "url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view",
+                    "webcomponent": { "selfRegistered": true },
+                    "context": {
+                      "resourceDefinition": {
+                        "apiGroup": "boinc_berkeley_edu",
+                        "version": "v1alpha1",
+                        "entity": "BoincWorkload",
+                        "entityCollection": "BoincWorkloads",
+                        "scope": "Namespaced",
+                        "namespace": null,
+                        "readyCondition": {
+                          "jsonPathExpression": "status.phase",
+                          "property": ["status.phase"]
+                        },
+                        "ui": {
+                          "listView": {
+                            "fields": [
+                              { "label": "Name",       "property": "metadata.name" },
+                              { "label": "Namespace",  "property": "metadata.namespace" },
+                              { "label": "Image",      "property": "spec.container.image" },
+                              { "label": "Replicas",   "property": "spec.replicaCount" },
+                              { "label": "Phase",      "property": "status.phase" },
+                              { "label": "Succeeded",  "property": "status.succeededWorkunits" },
+                              { "label": "Total",      "property": "status.totalWorkunits" }
+                            ]
+                          },
+                          "detailView": {
+                            "fields": [
+                              { "label": "Name",            "property": "metadata.name" },
+                              { "label": "Namespace",       "property": "metadata.namespace" },
+                              { "label": "Project",         "property": "spec.projectRef.name" },
+                              { "label": "Image",           "property": "spec.container.image" },
+                              { "label": "Command",         "property": "spec.container.command" },
+                              { "label": "Replicas",        "property": "spec.replicaCount" },
+                              { "label": "FLOPS Estimate",  "property": "spec.resources.flopsEstimate" },
+                              { "label": "Memory (MB)",     "property": "spec.resources.memoryBoundMB" },
+                              { "label": "Disk (MB)",       "property": "spec.resources.diskBoundMB" },
+                              { "label": "Phase",           "property": "status.phase" },
+                              { "label": "Batch ID",        "property": "status.batchId" },
+                              { "label": "Active",          "property": "status.activeWorkunits" },
+                              { "label": "Succeeded",       "property": "status.succeededWorkunits" },
+                              { "label": "Failed",          "property": "status.failedWorkunits" },
+                              { "label": "Total",           "property": "status.totalWorkunits" },
+                              { "label": "Message",         "property": "status.message" }
+                            ]
+                          },
+                          "createView": {
+                            "fields": [
+                              { "label": "Name",           "property": "metadata.name",                "required": true },
+                              { "label": "Namespace",      "property": "metadata.namespace",           "required": true, "values": ["default"] },
+                              { "label": "Project",        "property": "spec.projectRef.name",         "required": true },
+                              { "label": "Image",          "property": "spec.container.image",         "required": true },
+                              { "label": "Command",        "property": "spec.container.command" },
+                              { "label": "Replicas",       "property": "spec.replicaCount",            "required": true, "values": [1] },
+                              { "label": "FLOPS Estimate", "property": "spec.resources.flopsEstimate", "values": ["1e12"] },
+                              { "label": "Memory (MB)",    "property": "spec.resources.memoryBoundMB", "values": [512] },
+                              { "label": "Disk (MB)",      "property": "spec.resources.diskBoundMB",   "values": [1024] }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "pathSegment": ":workloadId",
+                        "hideFromNav": true,
+                        "keepSelectedForChildren": false,
+                        "defineEntity": {
+                          "id": "boinc_berkeley_edu_boincworkload",
+                          "contextKey": "workloadId",
+                          "graphqlEntity": {
+                            "group": "boinc_berkeley_edu",
+                            "version": "v1alpha1",
+                            "kind": "BoincWorkload",
+                            "query": "{ metadata { name namespace } }"
+                          }
+                        },
+                        "context": {
+                          "accountId": ":accountId",
+                          "workloadId": ":workloadId",
+                          "resourceId": ":workloadId"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "entityType": "main.core_platform-mesh_io_account.boinc_berkeley_edu_boincproject",
+                "pathSegment": "dashboard",
+                "label": "Dashboard",
+                "url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view",
+                "webcomponent": { "selfRegistered": true },
+                "defineEntity": { "id": "dashboard" },
+                "compound": { "children": [] }
+              },
+              {
+                "entityType": "main.core_platform-mesh_io_account.boinc_berkeley_edu_boincworkload",
+                "pathSegment": "dashboard",
+                "label": "Dashboard",
+                "url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view",
+                "webcomponent": { "selfRegistered": true },
+                "defineEntity": { "id": "dashboard" },
+                "compound": { "children": [] }
               }
-            }
-          ],
-          "texts": [
-            { "locale": "", "textDictionary": { "boinc": "BOINC Workloads" } },
-            { "locale": "en", "textDictionary": { "boinc": "BOINC Workloads" } }
-          ]
+            ],
+            "texts": [
+              { "locale": "",   "textDictionary": { "boinc": "BOINC", "projects": "Projects", "workloads": "Workloads" } },
+              { "locale": "en", "textDictionary": { "boinc": "BOINC", "projects": "Projects", "workloads": "Workloads" } }
+            ]
+          }
         }
       }
-     }
-    contentType: json

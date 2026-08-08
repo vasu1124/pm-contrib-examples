@@ -1,4 +1,4 @@
-apiVersion: boinc.platform-mesh.io/v1alpha1
+apiVersion: boinc.berkeley.edu/v1alpha1
 kind: BoincProject
 metadata:
   name: test-project

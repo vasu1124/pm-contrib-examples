@@ -1,9 +1,9 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
-  name: v1alpha1.boincworkloads.boinc.platform-mesh.io
+  name: v1alpha1.boincworkloads.boinc.berkeley.edu
 spec:
-  group: boinc.platform-mesh.io
+  group: boinc.berkeley.edu
   names:
     kind: BoincWorkload
     listKind: BoincWorkloadList
@@ -17,99 +17,113 @@ spec:
       served: true
       storage: true
       schema:
-        openAPIV3Schema:
-          type: object
-          properties:
-            spec:
-              type: object
-              required: ["projectRef", "container"]
-              properties:
-                projectRef:
+        description: BoincWorkload is the Schema for the boincworkloads API
+        type: object
+        properties:
+          apiVersion:
+            description: APIVersion defines the versioned schema of this representation of an object.
+            type: string
+          kind:
+            description: Kind is a string value representing the REST resource this object represents.
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            description: BoincWorkloadSpec defines the desired state of BoincWorkload
+            required: ["projectRef", "container"]
+            properties:
+              projectRef:
+                type: object
+                description: Reference to BoincProject in the same namespace
+                required: ["name"]
+                properties:
+                  name:
+                    type: string
+                    description: Name of the BoincProject in the same namespace
+              container:
+                type: object
+                description: Container configuration for the BOINC task
+                required: ["image"]
+                properties:
+                  image:
+                    type: string
+                    description: Docker container image to run on BOINC volunteers
+                  command:
+                    type: string
+                    description: Command line arguments passed to the container
+              resources:
+                type: object
+                description: Compute resource requirements for BOINC tasks
+                properties:
+                  flopsEstimate:
+                    type: string
+                    description: Estimated floating-point operations per workunit (scientific notation)
+                  memoryBoundMB:
+                    type: integer
+                    format: int64
+                    description: Memory limit in MB
+                  diskBoundMB:
+                    type: integer
+                    format: int64
+                    description: Disk space limit in MB
+              replicaCount:
+                type: integer
+                format: int32
+                description: Number of parallel workunits to create
+                default: 1
+              inputFiles:
+                type: array
+                description: Input files needed for the task
+                items:
                   type: object
-                  required: ["name"]
+                  required: ["name", "url"]
                   properties:
                     name:
                       type: string
-                      description: Name of the BoincProject in the same namespace
-                container:
+                    url:
+                      type: string
+          status:
+            type: object
+            description: BoincWorkloadStatus defines the observed state of BoincWorkload
+            properties:
+              phase:
+                type: string
+              batchId:
+                type: integer
+                format: int64
+              batchName:
+                type: string
+              activeWorkunits:
+                type: integer
+                format: int32
+              succeededWorkunits:
+                type: integer
+                format: int32
+              failedWorkunits:
+                type: integer
+                format: int32
+              totalWorkunits:
+                type: integer
+                format: int32
+              message:
+                type: string
+              conditions:
+                type: array
+                items:
                   type: object
-                  required: ["image"]
                   properties:
-                    image:
+                    type:
                       type: string
-                      description: Docker container image to run on BOINC volunteers
-                    command:
+                    status:
                       type: string
-                      description: Command line arguments passed to the container
-                resources:
-                  type: object
-                  properties:
-                    flopsEstimate:
+                    lastTransitionTime:
                       type: string
-                      description: Estimated floating-point operations per workunit (scientific notation)
-                    memoryBoundMB:
-                      type: integer
-                      format: int64
-                      description: Memory limit in MB
-                    diskBoundMB:
-                      type: integer
-                      format: int64
-                      description: Disk space limit in MB
-                replicaCount:
-                  type: integer
-                  format: int32
-                  description: Number of parallel workunits to create
-                  default: 1
-                inputFiles:
-                  type: array
-                  items:
-                    type: object
-                    required: ["name", "url"]
-                    properties:
-                      name:
-                        type: string
-                      url:
-                        type: string
-            status:
-              type: object
-              properties:
-                phase:
-                  type: string
-                batchId:
-                  type: integer
-                  format: int64
-                batchName:
-                  type: string
-                activeWorkunits:
-                  type: integer
-                  format: int32
-                succeededWorkunits:
-                  type: integer
-                  format: int32
-                failedWorkunits:
-                  type: integer
-                  format: int32
-                totalWorkunits:
-                  type: integer
-                  format: int32
-                message:
-                  type: string
-                conditions:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      type:
-                        type: string
-                      status:
-                        type: string
-                      lastTransitionTime:
-                        type: string
-                        format: date-time
-                      reason:
-                        type: string
-                      message:
-                        type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
       subresources:
         status: {}
       additionalPrinterColumns:

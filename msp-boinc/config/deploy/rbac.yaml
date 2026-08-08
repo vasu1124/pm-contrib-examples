@@ -9,7 +9,7 @@ kind: ClusterRole
 metadata:
   name: msp-boinc-controller
 rules:
-  - apiGroups: ["boinc.platform-mesh.io"]
+  - apiGroups: ["boinc.berkeley.edu"]
     resources: ["boincworkloads", "boincworkloads/status", "boincprojects", "boincprojects/status"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]

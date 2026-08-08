@@ -45,7 +45,7 @@ graph TB
         PW["Provider Workspace<br/>root:providers:boinc"]
         CW1["Consumer Workspace 1"]
         CW2["Consumer Workspace 2"]
-        AE["APIExport<br/>boinc.platform-mesh.io"]
+        AE["APIExport<br/>boinc.berkeley.edu"]
         AB1["APIBinding"] --> AE
         AB2["APIBinding"] --> AE
         CW1 --- AB1

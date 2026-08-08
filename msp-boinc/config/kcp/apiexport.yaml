@@ -1,11 +1,13 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIExport
 metadata:
-  name: boinc.platform-mesh.io
+  name: boinc.berkeley.edu
+  labels:
+    ui.platform-mesh.io/content-for: boinc.berkeley.edu
 spec:
   latestResourceSchemas:
-    - v1alpha1.boincworkloads.boinc.platform-mesh.io
-    - v1alpha1.boincprojects.boinc.platform-mesh.io
+    - v1alpha1.boincworkloads.boinc.berkeley.edu
+    - v1alpha1.boincprojects.boinc.berkeley.edu
   permissionClaims:
     - all: true
       group: ""
@@ -13,3 +15,6 @@ spec:
     - all: true
       group: ""
       resource: secrets
+    - all: true
+      group: ""
+      resource: namespaces

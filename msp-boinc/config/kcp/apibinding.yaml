@@ -1,16 +1,22 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIBinding
 metadata:
-  name: boinc
+  name: boinc.berkeley.edu
 spec:
   reference:
     export:
       path: root:providers:boinc
-      name: boinc.platform-mesh.io
+      name: boinc.berkeley.edu
   permissionClaims:
     - group: ""
       resource: events
+      all: true
       state: Accepted
     - group: ""
       resource: secrets
+      all: true
+      state: Accepted
+    - group: ""
+      resource: namespaces
+      all: true
       state: Accepted

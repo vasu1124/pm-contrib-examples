@@ -24,9 +24,11 @@ A consumer creates a `BoincWorkload` in their kcp workspace; the `msp-boinc` con
 
 ```bash
 # Platform Mesh admin kubeconfig (kcp)
-export PM_KUBECONFIG="path/to/kcp-admin.kubeconfig"
+cp ../../helm-charts/.secret/kcp/admin.kubeconfig kcp-admin.kubeconfig
+export PM_KUBECONFIG="$(realpath kcp-admin.kubeconfig)"
 # Compute cluster kubeconfig
-export COMPUTE_KUBECONFIG="path/to/compute.kubeconfig"
+kind export kubeconfig -n platform-mesh --kubeconfig ./compute.kubeconfig
+export COMPUTE_KUBECONFIG="$(realpath compute.kubeconfig)"
 ```
 
 ### 2. Create provider workspace and apply kcp resources
@@ -34,19 +36,16 @@ export COMPUTE_KUBECONFIG="path/to/compute.kubeconfig"
 ```bash
 KUBECONFIG=$PM_KUBECONFIG kubectl ws use :
 KUBECONFIG=$PM_KUBECONFIG kubectl ws create providers --type=root:providers --enter --ignore-existing
-KUBECONFIG=$PM_KUBECONFIG kubectl ws create boinc --type=root:provider --enter --ignore-existing
-KUBECONFIG=$PM_KUBECONFIG kubectl apply -f config/kcp/apiresourceschema-boincprojects.yaml
-KUBECONFIG=$PM_KUBECONFIG kubectl apply -f config/kcp/apiresourceschema-boincworkloads.yaml
-KUBECONFIG=$PM_KUBECONFIG kubectl apply -f config/kcp/apiexport.yaml
-KUBECONFIG=$PM_KUBECONFIG kubectl apply -f config/provider/providermetadata.yaml
-KUBECONFIG=$PM_KUBECONFIG kubectl apply -f config/provider/contentconfiguration.yaml
+KUBECONFIG=$PM_KUBECONFIG kubectl ws create boinc-provider --type=root:provider --enter --ignore-existing
+KUBECONFIG=$PM_KUBECONFIG kubectl apply -k config/kcp
+KUBECONFIG=$PM_KUBECONFIG kubectl apply -k config/provider
 ```
 
 ### 3. Extract operator kubeconfig
 
 ```bash
-KUBECONFIG=$PM_KUBECONFIG kubectl ws root:providers:boinc
-VW_URL="$(KUBECONFIG=$PM_KUBECONFIG kubectl get apiexportendpointslices.apis.kcp.io boinc.platform-mesh.io -o jsonpath='{.status.endpoints[0].url}')"
+KUBECONFIG=$PM_KUBECONFIG kubectl ws root:providers:boinc-provider
+VW_URL="$(KUBECONFIG=$PM_KUBECONFIG kubectl get apiexportendpointslices.apis.kcp.io boinc.berkeley.edu -o jsonpath='{.status.endpoints[0].url}')"
 KUBECONFIG=$PM_KUBECONFIG kubectl config view --minify --flatten > operator.kubeconfig
 kubectl --kubeconfig=operator.kubeconfig config set-cluster workspace.kcp.io/current \
   --server="${VW_URL}" --insecure-skip-tls-verify=true
@@ -54,11 +53,11 @@ kubectl --kubeconfig=operator.kubeconfig config set-cluster workspace.kcp.io/cur
 
 ### 4. Set up the test BOINC server
 
-Run a BOINC server using Docker Compose (on any reachable host):
+Install a BOINC server (on any reachable host). Follow [Docker-based BOINC server](https://github.com/BOINC/boinc/wiki/BoincDocker#docker-based-boinc-server) for detailed instructions. 
 
 ```bash
-git clone https://github.com/marius311/boinc-server-docker.git /tmp/boinc-server
-cd /tmp/boinc-server
+git clone https://github.com/marius311/boinc-server-docker.git boinc-server
+cd boinc-server
 docker compose up -d
 ```
 
